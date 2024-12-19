@@ -1,0 +1,26 @@
+<html>
+<head>
+    <title>Home</title>
+</head>
+<style>
+    body { background-color: midnightblue;}
+    .container {position: relative;}
+
+    .topleft {
+    position: absolute;
+    top: 8px;
+    left: 16px;
+    font-size: 18px;
+    }
+    img {
+       width: 30%;
+       height: 30%;
+       opacity: 0.9;}
+</style>
+<div class="container">
+    <img src="/img/dna.jpg" width="100" height="300">
+    </div>
+    <h1 style="color: white; margin-left:600px;">Welcome</h1>
+    <h3 style="color: white; margin-left:600px;">Do you have an account? <a style="color: red;" href="{{ url_for('login')}}">Login</a></h3>
+    <h3 style="color: white; margin-left:600px;">You don't? <a style="color: red;" href="{{ url_for('register') }}">Register</a></h3>
+</html>

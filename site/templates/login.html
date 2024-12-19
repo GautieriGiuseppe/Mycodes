@@ -1,0 +1,48 @@
+<head>
+    <title style="color: white">Login</title>
+</head>
+<style>
+    body { background-color: midnightblue;
+    }
+</style>
+<h1 style="color: red;">Login</h1>
+<form action="" method="post">
+   {{ form.hidden_tag() }}
+   <div>
+      {{ form.username(placeholder="username",
+      style='width: 50%;
+      font-weight: bold;
+      padding: 12px 20px ;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box') }}
+      {% for error in form.username.errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
+   </div>
+   <br>
+   <div>
+      {{ form.password(placeholder="password",
+      style='width: 50%;
+      font-weight: bold;
+      padding: 12px 20px ;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box') }}
+      {% for error in form.password.errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
+   </div>
+   <p style="color: white">{{ form.remember() }} {{ form.remember.label }}</p>
+   <p>{{ form.submit(style ='background-color: #4CAF50;
+      color: white;
+      width: 50%;
+      padding: 14px 20px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 4px') }}
+   </p>
+</form>
+<p><a style="color: red;" href="{{ url_for('register') }}">Create a new Account</a></p>

@@ -1,0 +1,11 @@
+<style>
+    body { background-color: midnightblue;
+    }
+</style>
+<h2 style="color: white">Welcome in your personal area</h2>
+<form style="color: white" action="" method="POST"
+    enctype="multipart/form-data">
+    <input type="file" name="file" />
+    <input type="submit"/>
+</form>
+<a href="{{ url_for('logout') }}">Logout</a>
