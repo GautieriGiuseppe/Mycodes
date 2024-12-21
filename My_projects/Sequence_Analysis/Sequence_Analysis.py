@@ -1,27 +1,45 @@
+import os
 import re
+from typing import *
 from Bio import SeqIO
 
+class ShortSeq:
+    def __init__(self, startPos: int, endPos: int, seq: str) -> None:
+        self.startPos, self.endPos, self.seq = startPos, endPos, seq
 
-class Sequence():
-    def __init__(self, fasta_file):
-        """ Load sequences from a list of FASTA files."""
-        for record in SeqIO.parse(fasta_file, "fasta"):
-            self.sequence = str(record.seq)
-            self.id = record.id
-            self.description = record.description
-            self.length = len(self.sequence)
-            self.results = []
+    def fromPattern(pattern: Pattern[str] | str, seq: str) -> list:
+        return [ShortSeq(m.start(), m.end(), m.group()) for m in re.finditer(pattern, seq)]
 
+    def __repr__(self) -> str:
+        return f"Position: {self.startPos}-{self.endPos}, Sequence: {self.seq}"
 
-    def calculate_gc_content(self):
-        """Calculate the GC content of a DNA sequence."""
+class Sequence:
+    PROMOTER_PATTERNS = tuple(map(re.compile, (r'TATA[AT]A[AT]', r'CAAT', r'CGTACG')))
+
+    def fromFasta(filePath: str) -> list:
+        if not os.path.exists(filePath):
+            raise FileNotFoundError(f"File not found: {filePath}")
+        try:
+            return [Sequence.fromFastaRecord(record) for record in SeqIO.parse(filePath, "fasta")]
+        except Exception as e:
+            raise ValueError(f"Error parsing FASTA file: {e}")
+
+    def fromFastaRecord(record) -> "Sequence":
+        return Sequence(str(record.seq), record.id, record.description)
+
+    def __init__(self, seq: str, id=0, descr="Not provided.", promoterPatterns: tuple[Pattern[str], ...] = PROMOTER_PATTERNS) -> None:
+        self.id, self.sequence, self.description = id, seq, descr
+        self.gc_content = self.calculate_gc_content()
+        self.promoters = self.findAllShortSeqsFromPatterns(promoterPatterns)
+        self.nucleotide_counts = self.calculate_nucleotide_counts_DNA()
+        self.start_sites, self.dists = self.find_transcription_start_site(self.promoters)
+
+    def calculate_gc_content(self) -> float:
         g = self.sequence.count('G')
         c = self.sequence.count('C')
-        return (g + c) / self.length * 100
+        return (g + c) / len(self.sequence) * 100
 
-
-    def calculate_nucleotide_counts_DNA(self):
-        """Calculate the count of each nucleotide in a DNA sequence."""
+    def calculate_nucleotide_counts_DNA(self) -> dict[str, int]:
         return {
             'A': self.sequence.count('A'),
             'T': self.sequence.count('T'),
@@ -29,86 +47,37 @@ class Sequence():
             'C': self.sequence.count('C')
         }
 
+    def findAllShortSeqsFromPatterns(self, patterns: tuple[Pattern[str] | str, ...]) -> list[ShortSeq]:
+        return [seq for pattern in patterns for seq in ShortSeq.fromPattern(pattern, self.sequence)]
 
-    def calculate_nucleotide_counts_RNA(self):
-        """Calculate the count of each nucleotide in a DNA sequence."""
-        return {
-            'A': self.sequence.count('A'),
-            'U': self.sequence.count('U'),
-            'G': self.sequence.count('G'),
-            'C': self.sequence.count('C')
-        }
-
-
-    def find_promoter_sequences(self, promoter_patterns):
-        """Identify promoter sequences in a DNA sequence based on given patterns."""
-        promoters = []
-        for pattern in promoter_patterns:
-            for match in re.finditer(pattern, self.sequence):
-                promoters.append((match.start(), match.end(), match.group()))
-        return promoters
-
-
-    def find_transcription_start_site(self, promoters):
-        """Identify the transcription start site using promoter distance and sequence."""
-        start_site_pattern = '[CT][CT]A[ATGC][AT][CT][CT]'
-        start_site = []
-        distance = 0
-        for match in re.finditer(start_site_pattern, self.sequence):
-            start_site.append((match.start(), match.end(), match.group()))
-        for start_init, end_init, init in start_site:
-            for start_prom, end_prom, promoter in promoters:
-                distance = abs(start_init - end_prom)
-        return start_site, distance
-
-
-    def analyze_genome(self, promoter_patterns):
-        """Analyze a genome from a FASTA file, including GC content, nucleotide counts, and promoter sequences."""
-        #for record in SeqIO.parse(self, "fasta"):
-        gc_content = self.calculate_gc_content()
-        nucleotide_counts = self.calculate_nucleotide_counts_DNA()
-        promoters = self.find_promoter_sequences(promoter_patterns)
-        (start_site, distance) = self.find_transcription_start_site(promoters)
-        self.results.append({
-            'id': self.id,
-            'description': self.description,
-            'length': self.length,
-            'gc_content': gc_content,
-            'nucleotide_counts': nucleotide_counts,
-            'promoters': promoters,
-            'transcription_start_site': start_site,
-            'distance_promoter': distance,
-        })
-        return self.__str__()
+    def find_transcription_start_site(self, promoters: list[ShortSeq]) -> tuple[list[ShortSeq], list[int]]:
+        startSites = self.findAllShortSeqsFromPatterns([r'[CT][CT]A[ATGC][AT][CT][CT]'])
+        distsToPromoters = [
+            abs(transcrSeq.startPos - promoter.endPos)
+            for transcrSeq in startSites
+            for promoter in promoters
+        ]
+        return startSites, distsToPromoters
 
     def __str__(self):
-        """Displays the results"""
-        for result in self.results:
-            print(f"ID: {result['id']}")
-            print(f"Description: {result['description']}")
-            print(f"Length: {result['length']}")
-            print(f"GC Content: {result['gc_content']:.2f}%")
-            print("Nucleotide Counts:")
-            for nucleotide, count in result['nucleotide_counts'].items():
-                print(f"  {nucleotide}: {count}")
-            print("Promoter Sequences:")
-            for start, end, promoter in result['promoters']:
-                print(f"  Position: {start}-{end}, Sequence: {promoter}")
-            print("Transcription start site: ")
-            if result['transcription_start_site']:
-                for start, end, start_site in result['transcription_start_site']:
-                    print(f"  Position: {start}-{end}, Sequence: {start_site}")
-                    if result['distance_promoter'] < 25 or result['distance_promoter'] > 30:
-                        print(f"  Distance: {result['distance_promoter']}, Abnormal promoter position")
-                    else:
-                        print(f"  Distance: {result['distance_promoter']}, Physiological positioning")
-            else:
-                print()
-                print("  Transcription start site not found in this sequence")
-            print()
+        seqRepr = (
+            f"ID: {self.id}\nDescription: {self.description}\nLength: {len(self.sequence)}\nGC Content: {self.gc_content:.2f}%\n\n"
+            f"Nucleotide Counts: {self.nucleotide_counts}\n"
+        )
+        if self.start_sites:
+            seqRepr += "Transcription Start Sites:\n"
+            for i, transcrSeq in enumerate(self.start_sites):
+                d = self.dists[i] if i < len(self.dists) else "N/A"
+                promoter_position = "Abnormal" if d == "N/A" or d < 25 or d > 30 else "Physiological"
+                seqRepr += f"{transcrSeq}, Distance: {d}, {promoter_position}\n"
+        else:
+            seqRepr += "Transcription Start Sites: not found\n"
+        return seqRepr
 
-fasta_file = "" # add path to fasta file here
-sequence = Sequence(fasta_file)
-promoter_patterns = [r'TATA[AT]A[AT]', r'CAAT', r'CGTACG']  # Example patterns: TATA box, CAAT box, etc.
-analysis_results = sequence.analyze_genome(promoter_patterns) # here we call the main method
-
+if __name__ == "__main__":
+    try:
+        sequences = Sequence.fromFasta("")  # Update this to your file path
+        for seq in sequences:
+            print(seq)
+    except Exception as e:
+        print(f"Error: {e}")

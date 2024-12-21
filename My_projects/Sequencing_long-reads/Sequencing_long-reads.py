@@ -25,7 +25,9 @@ class Long_Read(str):
                "bin/guppy_out_dem_trim", "-trim_barcodes"]
         elif tool == "porechop":
             cmd = ["porechop", "-i", "fastq_pass", "-b", "porechop_demultiplexed"]
-        subprocess.run(cmd)
+        else:
+            raise ValueError
+        subprocess.run(cmd, shell=True)
         return "Reads separated correctly"
 
     def merge(self):
@@ -36,7 +38,7 @@ class Long_Read(str):
         """Filter the reads and trimming using FiltLong."""
         cmd = ["conda", "run", "filtlong", "--min_length", "1000", "--keep_percent 90",
             "--trim", "-1", f"{rCRS_fasta}", f"{self}", ">", "barcode*.trim.fastq"]
-        subprocess.run(cmd)
+        subprocess.run(cmd, shell=True)
         return "Filtering completed"
 
     def reads_quality_check(self):
@@ -53,7 +55,9 @@ class Long_Read(str):
         elif tool == "Minimap2":
             cmd = ["conda", "run", "bin/minimap2", "bin/out/all_reads.fastq",
                    ">", "bin/alignment.sam", "-ax", "map-ont"] # pass fastq with all the reads
-        subprocess.run(cmd)
+        else:
+            raise ValueError
+        subprocess.run(cmd, shell=True)
         cmd = ["conda", "run", "samtools", "fixmate"]
         subprocess.run(cmd)
         return "Genome Assembly completed"
@@ -62,7 +66,7 @@ class Long_Read(str):
         """Remove duplicates using picard"""
         cmd = ["picard", "MarkDuplicates", "I=barcode*.bam", "O=barcode*.markdup.bam",
                "METRICS_FILE=rCRS.metric", "REMOVE_DUPLICATES=true", "CREATE_INDEX=true"]
-        subprocess.run(cmd)
+        subprocess.run(cmd, shell=True)
         return "Duplicates removed successfully"
 
     def variant_calling(self, tool="cuteSV"):
@@ -72,7 +76,9 @@ class Long_Read(str):
                    "folder in which save output"]
         elif tool == "Sniffles":
             cmd = []
-        subprocess.run(cmd)
+        else:
+            raise ValueError
+        subprocess.run(cmd, shell=True)
         return "Variant Calling Performed"
 
     def complete_analysis(self, summary_file, rCRS):
