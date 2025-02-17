@@ -19,7 +19,7 @@ def DNA_translate(sequence) -> str:
     return protein_sequence
 
 
-fasta_file = "/Users/giuse/pythonProject/Mycodes/samples/sequence1.txt" # add file path
+fasta_file = "/Users/giuse/pythonProject/Mycodes/samples/sequence1.txt" # add sequence file path
 sequence = DNA_translate(fasta_file)
 print(f"The sequence is {sequence}")
 
