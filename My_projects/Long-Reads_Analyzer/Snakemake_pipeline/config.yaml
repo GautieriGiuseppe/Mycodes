@@ -1,0 +1,5 @@
+guppy_barcoder_path: "/Users/giuse/Tools/ont-guppy-cpu/bin/guppy_barcoder"  # Replace with actual path
+reference_genome: "/Users/giuse/pythonProject/Mycodes/MyProjects/Long-Reads_Analyzer/Escherichia_coli_reference"  # Replace with actual path
+genome_size: "4.6m" # Example, replace with the estimated genome size
+input_fastq: "/Users/giuse/pythonProject/Mycodes/MyProjects/Long-Reads_Analyzer/simulated_ONT_data" # Your input folder
+summary_file: "/Users/giuse/pythonProject/Mycodes/MyProjects/Long-Reads_Analyzer/ONT_simulated_summary.txt" # Your summary file
