@@ -1,5 +1,6 @@
 import subprocess
 import os
+import Run_Quality_Analyzer
 
 """ Example fastq composition per sequence, many in the same file
 @SRR077391.1 HWUSI-EAS667_105020215:3:1:1339:1030/2
@@ -16,6 +17,7 @@ class Long_Read:
 
     def run_quality_check(self) -> subprocess.CompletedProcess:
         """Perform run quality check using PycoQC"""
+        Run_Quality_Analyzer.Graphs(self.summary_file)
         cmd = self.run_command("pycoQC")
         return subprocess.run(cmd, text=True, check=True)
 
@@ -73,24 +75,25 @@ class Long_Read:
         base_path = "/Users/giuse/pythonProject/Mycodes/MyProjects"
         input_path = f"{base_path}/simulated_ONT_data"
         results_path = f"{base_path}/results"
+        conda_env = "long_reads" # name of your conda environment
 
         match tool:
             case "pycoQC":
                 if not self.summary_file:
                     raise ValueError("Summary file path must be provided for pycoQC.")
                 output_file = f"{results_path}/pycoQC_output.html"
-                cmd = ["conda", "run", "-n", "long_reads", "pycoQC", "--summary_file", self.summary_file, "-o", output_file]
+                cmd = ["conda", "run", "-n", conda_env, "pycoQC", "--summary_file", self.summary_file, "-o", output_file]
 
             case "guppy_barcoder":
                 cmd = [
-                    "/Users/giuse/Tools/ont-guppy-cpu/bin/guppy_barcoder",
+                    "/Users/giuse/Tools/ont-guppy-cpu/bin/guppy_barcoder", # path of guppy tool
                     "-i", input_path,
                     "-s", results_path,
                     "--trim_barcodes"
                 ]
 
             case "porechop":
-                cmd = ["porechop", "-i", input_path]
+                cmd = ["conda", "run", "-n", conda_env, "porechop", "-i", input_path]
 
             case "filtlong":
                 input_file = f"{base_path}/data_separated/ONT_sample{sample}.fastq"
@@ -102,10 +105,10 @@ class Long_Read:
 
             case "fastqc":
                 input_file = f"{results_path}/barcode_{sample}.filtered.fastq"
-                cmd = ["conda", "run", "-n", "long_reads", "fastqc", input_file, "--outdir", f"{results_path}/fastqc"]
+                cmd = ["conda", "run", "-n", conda_env, "fastqc", input_file, "--outdir", f"{results_path}/fastqc"]
 
             case "Flye":
-                cmd = ["conda", "run", "-n", "long_reads",
+                cmd = ["conda", "run", "-n", conda_env,
                     "flye", "--nano-hq", f"{results_path}/barcode_{sample}.filtered.fastq",
                     "--genome-size", "4.6m", "--out-dir",
                     f"{results_path}/flye_assembly", "--threads", "7"
@@ -114,22 +117,22 @@ class Long_Read:
             case "Minimap2":
                 input_file = f"{results_path}/barcode_{sample}.filtered.fastq"
                 sam_output = f"{results_path}/sample_{sample}.sam"
-                cmd = ["conda", "run", "-n", "long_reads", "minimap2", "-ax", "map-ont", self.reference_genome, input_file, ">", sam_output]
+                cmd = ["conda", "run", "-n", conda_env, "minimap2", "-ax", "map-ont", self.reference_genome, input_file, ">", sam_output]
 
             case "samtools_view":
                 input_file = f"{results_path}/sample_{sample}.sam"
                 bam_output = f"{results_path}/sample_{sample}.bam"
-                cmd = ["conda", "run", "-n", "long_reads", "samtools", "view", "-bS", input_file, "|", "samtools", "sort", "-o", bam_output]
+                cmd = ["conda", "run", "-n", conda_env, "samtools", "view", "-bS", input_file, "|", "samtools", "sort", "-o", bam_output]
 
             case "samtools_index":
                 input_file = f"{results_path}/sample_{sample}.sam"
                 bam_output = f"{results_path}/sample_{sample}.bam"
-                cmd = ["conda", "run", "-n", "long_reads", "samtools", "index", bam_output]
+                cmd = ["conda", "run", "-n", conda_env, "samtools", "index", bam_output]
 
             case "picard":
                 input_file = f"{results_path}/sample_{sample}.bam"
                 output_file = f"{results_path}/sample_{sample}.markdup.bam"
-                cmd = ["conda", "run", "-n", "long_reads",
+                cmd = ["conda", "run", "-n", conda_env,
                     "picard", "MarkDuplicates", f"I={input_file}", f"O={output_file}",
                     f"METRICS_FILE={self.reference_genome}", "REMOVE_DUPLICATES=true", "CREATE_INDEX=true"
                 ]
@@ -137,12 +140,12 @@ class Long_Read:
             case "CuteSV":
                 input_file = f"{results_path}/sample_{sample}.markdup.bam"
                 output_file = f"{results_path}/sample_{sample}.outcute"
-                cmd = ["conda", "run", "-n", "long_reads", "cuteSV", input_file, self.reference_genome, output_file]
+                cmd = ["conda", "run", "-n", conda_env, "cuteSV", input_file, self.reference_genome, output_file]
 
             case "Sniffles":
                 input_file = f"{results_path}/sample_{sample}.markdup.bam"
                 output_file = f"{results_path}/sample_{sample}.vcf"
-                cmd = ["conda", "run", "-n", "long_reads", "sniffles", "--input", input_file, "--vcf", output_file]
+                cmd = ["conda", "run", "-n", conda_env, "sniffles", "--input", input_file, "--vcf", output_file]
 
             case _:
                 raise ValueError(f"Unsupported tool: {tool}")
@@ -151,10 +154,10 @@ class Long_Read:
 
 
 if __name__ == "__main__":
-    base_path = "/Users/giuse/pythonProject/Mycodes/MyProjects"
-    filePath = f"{base_path}/simulated_ONT_data/combined.fastq"
-    summary_file_path = f"{base_path}/ONT_simulated_summary.txt"
-    reference_genome_path = f"{base_path}/Escherichia_coli_reference"
+    base_path = "/Users/giuse/pythonProject/Mycodes/MyProjects" # set working directory
+    filePath = f"{base_path}/simulated_ONT_data/combined.fastq" # file with all the reads
+    summary_file_path = f"{base_path}/ONT_simulated_summary.txt" # summary output of ONT
+    reference_genome_path = f"{base_path}/Escherichia_coli_reference" # reference genome
 
     for path in [filePath, summary_file_path, reference_genome_path]:
         if not os.path.exists(path):
