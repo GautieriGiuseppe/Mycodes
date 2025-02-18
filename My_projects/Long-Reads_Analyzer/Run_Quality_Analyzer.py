@@ -4,9 +4,9 @@ import seaborn as sns
 import numpy as np
 
 # Load ONT summary txt
-summary_file = "/Users/giuse/pythonProject/Mycodes/samples/ONT_simulated_summary.txt"
+summary_file = ""
 
-def Run_Quality_Analuzer(summary_file:str):
+def Graphs(summary_file:str):
     df = pd.read_csv(summary_file, sep="\t")
 
     # Check column name
