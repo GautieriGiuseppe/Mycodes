@@ -1,0 +1,3 @@
+The second imporoved version of the translator print in the output the 
+original DNA sequence contained in the FASTA file, the reverse complement 
+od the strand, the mRNA transcript and the amino acids translate.
