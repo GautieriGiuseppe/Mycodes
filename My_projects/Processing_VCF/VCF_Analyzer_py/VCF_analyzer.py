@@ -1,11 +1,13 @@
 import os.path
-import vcf
+import vcfpy
 import pandas as pd
 import matplotlib.pyplot as plt
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-
+def process_chunk(chunk):
+    """Processes a chunk of VCF records into a DataFrame"""
+    return pd.DataFrame(chunk)
 
 class VCFProcessor:
     def __init__(self, input_vcfs : list, clinvar_vcf=None, gene_db=None):
@@ -23,10 +25,10 @@ class VCFProcessor:
             return
 
         print("Merging Files...")
-        vcf_readers = [vcf.Reader(open(f, 'r')) for f in self.input_vcfs if os.path.exists(f)]
+        vcf_readers = [vcfpy.Reader(open(f, 'r')) for f in self.input_vcfs if os.path.exists(f)]
         if not vcf_readers:
             raise FileNotFoundError("No valid VCF files found.")
-        vcf_writer = vcf.Writer(open(self.merged_vcf, 'w'), vcf_readers[0])
+        vcf_writer = vcfpy.Writer(open(self.merged_vcf, 'w'), vcf_readers[0])
 
         for reader in vcf_readers:
             for record in reader:
@@ -38,12 +40,8 @@ class VCFProcessor:
         """Converts VCF into a Pandas DataFrame."""
         print("Converting VCF to DataFrame...")
         chunk_size = 50000
-        vcf_reader = vcf.Reader(open(self.merged_vcf, 'r'))
+        vcf_reader = vcfpy.Reader(open(self.merged_vcf, 'r'))
         records = []
-
-        # Process VCF in chunks
-        def process_chunk(chunk):
-            return pd.DataFrame(chunk)
 
         with ProcessPoolExecutor(max_workers=num_workers) as executor:
             futures = []
@@ -149,7 +147,7 @@ class VCFProcessor:
 
 # Run Pipeline
 if __name__ == "__main__":
-    input_vcf = ["sample.vcf", "sample2.vcf"]
+    input_vcf = ["/Users/giuse/Downloads/case584_variants.vcf"]
     clinvar_vcf = "clinvar.vcf"
     gene_db = "gene_database.txt"
 
